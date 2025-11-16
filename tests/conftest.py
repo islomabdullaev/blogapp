@@ -4,17 +4,16 @@ Pytest configuration and fixtures
 
 import pytest
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
-
-from app.main import app
-from core.settings import Settings
 
 # Import all models to register them with SQLModel metadata
 from app.auth.models.verification import EmailVerification  # noqa: F401
 from app.blogs.models.posts import Comment, Post, PostLike  # noqa: F401
+from app.main import app
 from app.users.models.users import User  # noqa: F401
+from core.settings import Settings
 
 settings = Settings()
 DATABASE_URL = settings.postgres.adsn
