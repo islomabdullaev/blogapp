@@ -25,4 +25,3 @@ class EmailVerification(BaseModel, table=True):
     def is_expired(self) -> bool:
         """Check if verification token has expired"""
         return datetime.utcnow() > self.expires_at
-

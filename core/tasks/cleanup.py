@@ -1,20 +1,22 @@
 """
 Celery tasks for cleanup operations
 """
+
 import asyncio
 import logging
 from datetime import datetime, timedelta
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from app.auth.models.verification import EmailVerification
+from app.auth.repositories.verification import VerificationRepository
+from app.blogs.models.posts import Post
+from app.blogs.repositories.posts import PostRepository
+from app.users.repositories.users import UserRepository
 from core.celery_app import celery_app
 from core.settings import Settings
-from app.auth.repositories.verification import VerificationRepository
-from app.auth.models.verification import EmailVerification
-from app.users.repositories.users import UserRepository
-from app.blogs.repositories.posts import PostRepository
-from app.blogs.models.posts import Post
-from sqlmodel import select
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +38,7 @@ async def _cleanup_expired_unverified_users_async():
     AsyncSessionLocal = async_sessionmaker(
         engine, class_=AsyncSession, expire_on_commit=False
     )
-    
+
     try:
         async with AsyncSessionLocal() as db:
             try:
@@ -101,7 +103,7 @@ async def _cleanup_expired_posts_async():
     AsyncSessionLocal = async_sessionmaker(
         engine, class_=AsyncSession, expire_on_commit=False
     )
-    
+
     try:
         async with AsyncSessionLocal() as db:
             try:

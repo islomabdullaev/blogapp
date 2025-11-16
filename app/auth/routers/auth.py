@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, status, Request
+from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from core.db.session import get_session
+
+from app.auth.schemas.auth import LoginRequest, TokenResponse, UserCreate
 from app.auth.services.auth import AuthService
 from app.auth.services.verification import VerificationService
-from app.auth.schemas.auth import UserCreate, LoginRequest, TokenResponse
+from core.db.session import get_session
 
 router = APIRouter(tags=["auth"])
 
@@ -29,9 +30,11 @@ async def register(
 async def login(
     credentials: LoginRequest,
     request: Request,
-    service: AuthService = Depends(get_auth_service)
+    service: AuthService = Depends(get_auth_service),
 ):
-    return await service.login(email=credentials.email, password=credentials.password, request=request)
+    return await service.login(
+        email=credentials.email, password=credentials.password, request=request
+    )
 
 
 @router.post("/verify-email/{token}", status_code=status.HTTP_200_OK)

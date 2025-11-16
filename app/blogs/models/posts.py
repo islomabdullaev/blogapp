@@ -1,19 +1,18 @@
 import re
 import uuid
 from datetime import datetime
-from typing import Optional, List, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional
 
 from pydantic import Field, validator
 
 # SQLModel
-from sqlmodel import  Field, Relationship
+from sqlmodel import Field, Relationship
 
 # models
 from core.models.base import BaseModel
 
 if TYPE_CHECKING:
     from app.users.models.users import User
-
 
 
 class Post(BaseModel, table=True):
@@ -40,7 +39,9 @@ class Post(BaseModel, table=True):
         # Only letters (latin/cyrillic) and spaces
         pattern = r"^[a-zа-яёA-ZА-ЯЁ0-9\s]+$"
         if not re.fullmatch(pattern, v):
-            raise ValueError("Title должен содержать только буквы латиницы/кириллицы, цифры и пробелы")
+            raise ValueError(
+                "Title должен содержать только буквы латиницы/кириллицы, цифры и пробелы"
+            )
         if not (5 < len(v) < 1000):
             raise ValueError("Title должен быть больше 5 и меньше 1000 символов")
         return v
@@ -54,7 +55,7 @@ class Post(BaseModel, table=True):
 
 class PostLike(BaseModel, table=True):
     __tablename__ = "postlike"
-    
+
     user_id: uuid.UUID = Field(foreign_key="users.id", primary_key=True)
     post_id: uuid.UUID = Field(foreign_key="post.id", primary_key=True)
 
@@ -64,7 +65,7 @@ class PostLike(BaseModel, table=True):
 
 class Comment(BaseModel, table=True):
     __tablename__ = "comment"
-    
+
     post_id: uuid.UUID = Field(foreign_key="post.id", nullable=False)
     user_id: uuid.UUID = Field(foreign_key="users.id", nullable=False)
 

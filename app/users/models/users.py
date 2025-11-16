@@ -1,5 +1,5 @@
 import re
-from typing import List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional
 
 # sqlmodel
 from sqlmodel import Field, Relationship
@@ -8,8 +8,8 @@ from sqlmodel import Field, Relationship
 from core.models.base import BaseModel
 
 if TYPE_CHECKING:
-    from app.blogs.models.posts import Post, Comment, PostLike
     from app.auth.models.verification import EmailVerification
+    from app.blogs.models.posts import Comment, Post, PostLike
 
 # pydantic
 from pydantic import EmailStr, validator

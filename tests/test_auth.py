@@ -1,6 +1,7 @@
 """
 Integration tests for authentication endpoints
 """
+
 import pytest
 from httpx import AsyncClient
 
@@ -158,4 +159,3 @@ async def test_get_current_user_unauthenticated(client: AsyncClient):
     """Test getting current user without authentication"""
     response = await client.get("/api/user/me")
     assert response.status_code == 403
-

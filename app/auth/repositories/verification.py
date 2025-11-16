@@ -1,10 +1,11 @@
 from datetime import datetime
+from typing import List, Optional
+
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
-from typing import Optional, List
 
-from core.repositories.base import BaseRepository
 from app.auth.models.verification import EmailVerification
+from core.repositories.base import BaseRepository
 
 
 class VerificationRepository(BaseRepository[EmailVerification]):
@@ -30,14 +31,10 @@ class VerificationRepository(BaseRepository[EmailVerification]):
     async def get_expired_unverified(self) -> List[EmailVerification]:
         """Get expired unverified email verifications"""
         now = datetime.utcnow()
-        statement = (
-            select(EmailVerification)
-            .where(
-                EmailVerification.is_verified == False,
-                EmailVerification.expires_at < now,
-                EmailVerification.is_deleted == False,
-            )
+        statement = select(EmailVerification).where(
+            EmailVerification.is_verified == False,
+            EmailVerification.expires_at < now,
+            EmailVerification.is_deleted == False,
         )
         result = await self.db.exec(statement)
         return result.all()
-

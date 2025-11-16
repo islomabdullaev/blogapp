@@ -1,22 +1,24 @@
 from datetime import datetime
 from uuid import UUID
+
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from core.db.session import get_session
+
 from app.auth.dependencies.jwt import JwtBearer
-from app.users.models.users import User
-from app.blogs.services.v1.posts import PostService
-from app.blogs.services.v1.comments import CommentService
-from app.blogs.services.v1.likes import PostLikeService
+from app.blogs.schemas.comments import CommentCreateSchema, CommentResponseSchema
 from app.blogs.schemas.posts import (
     PostCreateSchema,
     PostListResponseSchema,
-    PostUpdateSchema,
     PostResponseSchema,
-    UserWithArticlesSchema,
+    PostUpdateSchema,
     UserWithArticlesListResponseSchema,
+    UserWithArticlesSchema,
 )
-from app.blogs.schemas.comments import CommentCreateSchema, CommentResponseSchema
+from app.blogs.services.v1.comments import CommentService
+from app.blogs.services.v1.likes import PostLikeService
+from app.blogs.services.v1.posts import PostService
+from app.users.models.users import User
+from core.db.session import get_session
 
 router = APIRouter(tags=["blogs"])
 
@@ -44,14 +46,16 @@ async def posts(
     date_to: datetime = Query(None),
     service: PostService = Depends(get_post_service),
 ):
-    return await service.list_posts(skip=skip, limit=limit, search=search, date_from=date_from, date_to=date_to)
+    return await service.list_posts(
+        skip=skip, limit=limit, search=search, date_from=date_from, date_to=date_to
+    )
 
 
 @router.post("/", response_model=PostResponseSchema)
 async def create_post(
     data: PostCreateSchema,
     current_user: User = Depends(jwt_bearer.get_current_user),
-    service: PostService = Depends(get_post_service)
+    service: PostService = Depends(get_post_service),
 ):
     return await service.create_post(data=data, user=current_user)
 
@@ -60,16 +64,13 @@ async def create_post(
 async def get_all_users_with_articles(
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=100),
-    service: PostService = Depends(get_post_service)
+    service: PostService = Depends(get_post_service),
 ):
     return await service.get_all_users_with_articles(skip=skip, limit=limit)
 
 
 @router.get("/{post_id}", response_model=PostResponseSchema)
-async def get_post(
-    post_id: UUID,
-    service: PostService = Depends(get_post_service)
-):
+async def get_post(post_id: UUID, service: PostService = Depends(get_post_service)):
     return await service.get_post(post_id=post_id)
 
 
@@ -78,7 +79,7 @@ async def update_post(
     post_id: UUID,
     data: PostUpdateSchema,
     current_user: User = Depends(jwt_bearer.get_current_user),
-    service: PostService = Depends(get_post_service)
+    service: PostService = Depends(get_post_service),
 ):
     return await service.update_post(post_id=post_id, data=data, user=current_user)
 
@@ -87,7 +88,7 @@ async def update_post(
 async def delete_post(
     post_id: UUID,
     current_user: User = Depends(jwt_bearer.get_current_user),
-    service: PostService = Depends(get_post_service)
+    service: PostService = Depends(get_post_service),
 ):
     await service.delete_post(post_id=post_id, user=current_user)
 
@@ -98,15 +99,14 @@ async def create_comment(
     post_id: UUID,
     data: CommentCreateSchema,
     current_user: User = Depends(jwt_bearer.get_current_user),
-    service: CommentService = Depends(get_comment_service)
+    service: CommentService = Depends(get_comment_service),
 ):
     return await service.create_comment(post_id=post_id, data=data, user=current_user)
 
 
 @router.get("/{post_id}/comments", response_model=list[CommentResponseSchema])
 async def get_comments(
-    post_id: UUID,
-    service: CommentService = Depends(get_comment_service)
+    post_id: UUID, service: CommentService = Depends(get_comment_service)
 ):
     return await service.get_comments_by_post(post_id)
 
@@ -127,7 +127,9 @@ async def delete_comment(
     current_user: User = Depends(jwt_bearer.get_current_user),
     service: CommentService = Depends(get_comment_service),
 ):
-    await service.delete_comment(post_id=post_id, comment_id=comment_id, user=current_user)
+    await service.delete_comment(
+        post_id=post_id, comment_id=comment_id, user=current_user
+    )
 
 
 # Like endpoints
@@ -135,7 +137,7 @@ async def delete_comment(
 async def toggle_like(
     post_id: UUID,
     current_user: User = Depends(jwt_bearer.get_current_user),
-    service: PostLikeService = Depends(get_like_service)
+    service: PostLikeService = Depends(get_like_service),
 ):
     return await service.toggle_like(post_id=post_id, user=current_user)
 
@@ -144,7 +146,7 @@ async def toggle_like(
 async def check_like(
     post_id: UUID,
     current_user: User = Depends(jwt_bearer.get_current_user),
-    service: PostLikeService = Depends(get_like_service)
+    service: PostLikeService = Depends(get_like_service),
 ):
     liked = await service.check_like(post_id=post_id, user=current_user)
     return {"liked": liked}

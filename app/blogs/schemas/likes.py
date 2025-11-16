@@ -1,4 +1,5 @@
 from uuid import UUID
+
 from pydantic import BaseModel
 
 
@@ -8,4 +9,3 @@ class PostLikeResponseSchema(BaseModel):
 
     class Config:
         from_attributes = True
-

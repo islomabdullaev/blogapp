@@ -1,16 +1,17 @@
 from datetime import datetime, timedelta
-from fastapi import HTTPException, status, Request
-from sqlmodel.ext.asyncio.session import AsyncSession
+
+from fastapi import HTTPException, Request, status
 from passlib.context import CryptContext
-from app.users.repositories.users import UserRepository
-from app.auth.schemas.auth import UserCreate
+from sqlmodel.ext.asyncio.session import AsyncSession
+
 from app.auth.dependencies.jwt import JwtBearer
+from app.auth.schemas.auth import UserCreate
 from app.auth.services.verification import VerificationService
 from app.users.models.users import User
+from app.users.repositories.users import UserRepository
+from core.db.redis_client import get_redis_client
 from core.security.brute_force import BruteForceProtection
 from core.security.sanitizer import sanitize_string
-from core.db.redis_client import get_redis_client
-
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -27,7 +28,7 @@ class AuthService:
         user.username = sanitize_string(user.username)
         user.email = sanitize_string(user.email)
         user.full_name = sanitize_string(user.full_name)
-        
+
         existing = await self.repo.get_by_username(user.username)
         if existing:
             raise HTTPException(
@@ -68,40 +69,43 @@ class AuthService:
         if self.brute_force_protection is None:
             redis_client = await get_redis_client()
             self.brute_force_protection = BruteForceProtection(redis_client)
-        
+
         # Sanitize email input
         email = sanitize_string(email)
-        
+
         # Get client IP for brute force protection
         client_ip = request.client.host if request else "unknown"
         identifier = f"{client_ip}:{email}"
-        
+
         # Check brute force protection
         await self.brute_force_protection.check_attempts(identifier)
-        
+
         user = await self.repo.get_by_email(email)
         if not user or not pwd_context.verify(password, user.password):
             # Record failed attempt
             await self.brute_force_protection.record_failed_attempt(identifier)
-            
+
             # Check if we should block after this attempt
             attempts_key = f"brute_force:{identifier}"
             redis_client = await get_redis_client()
             if redis_client:
                 try:
                     attempts = await redis_client.get(attempts_key)
-                    if attempts and int(attempts) >= self.brute_force_protection.max_attempts - 1:
+                    if (
+                        attempts
+                        and int(attempts)
+                        >= self.brute_force_protection.max_attempts - 1
+                    ):
                         await self.brute_force_protection.block_identifier(identifier)
                 except Exception:
                     pass
-            
+
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid credentials"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
             )
-        
+
         # Clear failed attempts on successful login
         await self.brute_force_protection.record_successful_login(identifier)
-        
+
         token = await self.jwt_bearer.create_access_token({"sub": user.email})
         return {"access_token": token, "token_type": "bearer"}

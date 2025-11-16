@@ -1,13 +1,14 @@
 """
 Pytest configuration and fixtures
 """
+
 import pytest
 from httpx import AsyncClient
+from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.main import app
 from core.db.session import AsyncSessionLocal, engine
-from sqlmodel import SQLModel
 
 
 @pytest.fixture
@@ -21,12 +22,14 @@ async def db_session():
 @pytest.fixture
 async def client(db_session):
     """Create a test client"""
+
     async def get_test_session():
         yield db_session
 
     app.dependency_overrides = {}
     # Override get_session dependency
     from core.db.session import get_session
+
     app.dependency_overrides[get_session] = get_test_session
 
     async with AsyncClient(app=app, base_url="http://test") as ac:
@@ -43,4 +46,3 @@ async def setup_db():
     yield
     async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.drop_all)
-

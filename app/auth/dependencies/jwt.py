@@ -1,23 +1,26 @@
 from datetime import datetime, timedelta
 
+from fastapi import Depends, HTTPException, status
+
 # fastapi
 from fastapi.security import HTTPAuthorizationCredentials, OAuth2PasswordBearer
-from fastapi import Depends, HTTPException, status
 from fastapi.security.http import HTTPBearer
-from sqlalchemy.ext.asyncio import AsyncSession
 
 # jwt
-from jose import jwt, JWTError
+from jose import JWTError, jwt
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.users.repositories.users import UserRepository
 
 # app
 from core.db.session import get_session
-from app.users.repositories.users import UserRepository
 from core.settings import Settings
 
 settings = Settings()
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+
 
 class JwtBearer:
 
@@ -41,8 +44,8 @@ class JwtBearer:
 
     async def get_current_user(
         self,
-        token: HTTPAuthorizationCredentials = Depends(HTTPBearer()), 
-        session: AsyncSession = Depends(get_session)
+        token: HTTPAuthorizationCredentials = Depends(HTTPBearer()),
+        session: AsyncSession = Depends(get_session),
     ):
         payload = await self.decode_access_token(token.credentials)
         if not payload or "sub" not in payload:
@@ -51,12 +54,11 @@ class JwtBearer:
                 detail="Invalid authentication credentials",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        
+
         email = payload["sub"]
         user = await UserRepository(session).get_by_email(email)
         if not user:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
             )
         return user

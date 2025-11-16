@@ -1,11 +1,12 @@
 import secrets
 from datetime import datetime, timedelta
 from uuid import UUID
-from sqlmodel.ext.asyncio.session import AsyncSession
-from fastapi import HTTPException, status
 
-from app.auth.repositories.verification import VerificationRepository
+from fastapi import HTTPException, status
+from sqlmodel.ext.asyncio.session import AsyncSession
+
 from app.auth.models.verification import EmailVerification
+from app.auth.repositories.verification import VerificationRepository
 from app.auth.schemas.auth import EmailVerificationSchema
 
 
@@ -74,4 +75,3 @@ class VerificationService:
         await self.db.refresh(verification)
 
         return True
-

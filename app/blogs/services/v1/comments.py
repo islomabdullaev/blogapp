@@ -1,12 +1,13 @@
 from uuid import UUID
-from sqlmodel.ext.asyncio.session import AsyncSession
-from fastapi import HTTPException, status
 
+from fastapi import HTTPException, status
+from sqlmodel.ext.asyncio.session import AsyncSession
+
+from app.blogs.models.posts import Comment, Post
 from app.blogs.repositories.comments import CommentRepository
 from app.blogs.repositories.posts import PostRepository
-from app.blogs.models.posts import Comment, Post
-from app.users.models.users import User
 from app.blogs.schemas.comments import CommentCreateSchema
+from app.users.models.users import User
 from core.security.sanitizer import sanitize_string
 
 
@@ -94,5 +95,7 @@ class CommentService:
             )
 
         deleted_count = await self.repo.delete_all_by_post_id(post_id)
-        return {"deleted_count": deleted_count, "message": f"Deleted {deleted_count} comment(s)"}
-
+        return {
+            "deleted_count": deleted_count,
+            "message": f"Deleted {deleted_count} comment(s)",
+        }

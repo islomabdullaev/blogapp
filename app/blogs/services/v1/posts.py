@@ -1,23 +1,29 @@
 import json
-
 from datetime import datetime, timedelta
+from typing import Dict, List
 from uuid import UUID
-from typing import List, Dict
-from sqlalchemy import JSON
-from sqlmodel.ext.asyncio.session import AsyncSession
+
 from fastapi import HTTPException, status
-from sqlmodel import select, or_, and_, func
+from sqlalchemy import JSON
 from sqlalchemy.orm import selectinload
+from sqlmodel import and_, func, or_, select
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 # models
 from app.blogs.models.posts import Post, PostLike
-from app.users.models.users import User
 
 # repo
 from app.blogs.repositories.posts import PostRepository
 
 # schemas
-from app.blogs.schemas.posts import PostCreateSchema, PostUpdateSchema, ArticleSchema, UserWithArticlesSchema, UserWithArticlesListResponseSchema
+from app.blogs.schemas.posts import (
+    ArticleSchema,
+    PostCreateSchema,
+    PostUpdateSchema,
+    UserWithArticlesListResponseSchema,
+    UserWithArticlesSchema,
+)
+from app.users.models.users import User
 
 # security
 from core.security.sanitizer import sanitize_string
@@ -134,14 +140,14 @@ class PostService:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You can only update your own posts",
             )
-        
+
         # Sanitize input to prevent XSS
         update_data = data.model_dump(exclude_unset=True)
         if "title" in update_data and update_data["title"]:
             update_data["title"] = sanitize_string(update_data["title"])
         if "content" in update_data and update_data["content"]:
             update_data["content"] = sanitize_string(update_data["content"])
-        
+
         return await self.repo.update(post, update_data)
 
     async def delete_post(self, post_id: UUID, user: User):
@@ -171,15 +177,14 @@ class PostService:
             .distinct()
             .subquery()
         )
-        
+
         # Then aggregate the distinct user_ids per post
         likes_subq = (
             select(
                 distinct_likes.c.post_id,
                 func.coalesce(
-                    func.json_agg(distinct_likes.c.user_id), 
-                    func.cast('[]', JSON)
-                ).label("likes")
+                    func.json_agg(distinct_likes.c.user_id), func.cast("[]", JSON)
+                ).label("likes"),
             )
             .group_by(distinct_likes.c.post_id)
             .subquery()
@@ -189,13 +194,17 @@ class PostService:
         articles_json = func.coalesce(
             func.json_agg(
                 func.json_build_object(
-                    "uuid", Post.id,
-                    "title", Post.title,
-                    "content", Post.content,
-                    "likes", likes_subq.c.likes
+                    "uuid",
+                    Post.id,
+                    "title",
+                    Post.title,
+                    "content",
+                    Post.content,
+                    "likes",
+                    likes_subq.c.likes,
                 )
             ).filter(Post.id.isnot(None)),
-            func.cast('[]', JSON)
+            func.cast("[]", JSON),
         ).label("articles")
 
         # 4️⃣ Main query: users + posts + likes
@@ -206,7 +215,7 @@ class PostService:
                 and_(
                     User.id == Post.user_id,
                     Post.is_deleted == False,
-                )
+                ),
             )
             .outerjoin(likes_subq, likes_subq.c.post_id == Post.id)
             .where(User.is_deleted == False)
@@ -226,25 +235,19 @@ class PostService:
             # Parse if row.articles is a JSON string
             if isinstance(articles, str):
                 articles = json.loads(articles)
-            
+
             # Parse JSON strings if needed for each article
             parsed_articles = []
             for article in articles:
                 if isinstance(article, str):
                     article = json.loads(article)
                 parsed_articles.append(ArticleSchema(**article))
-            
+
             items.append(
-                UserWithArticlesSchema(
-                    username=row.username,
-                    articles=parsed_articles
-                )
+                UserWithArticlesSchema(username=row.username, articles=parsed_articles)
             )
 
         # 6️⃣ Return final paginated response
         return UserWithArticlesListResponseSchema(
-            items=items,
-            total=total,
-            skip=skip,
-            limit=limit
+            items=items, total=total, skip=skip, limit=limit
         )

@@ -1,10 +1,11 @@
 from uuid import UUID
-from sqlmodel.ext.asyncio.session import AsyncSession
-from fastapi import HTTPException, status
 
+from fastapi import HTTPException, status
+from sqlmodel.ext.asyncio.session import AsyncSession
+
+from app.blogs.models.posts import Post
 from app.blogs.repositories.likes import PostLikeRepository
 from app.blogs.repositories.posts import PostRepository
-from app.blogs.models.posts import Post
 from app.blogs.schemas.posts import PostLikeSchema
 from app.users.models.users import User
 
@@ -38,7 +39,9 @@ class PostLikeService:
                 detail="You cannot like your own post",
             )
 
-        existing_like = await self.repo.get_by_user_and_post(user_id=user.id, post_id=post_id)
+        existing_like = await self.repo.get_by_user_and_post(
+            user_id=user.id, post_id=post_id
+        )
         if existing_like:
             await self.repo.delete(existing_like)
             return {"liked": False, "message": "Post unliked"}
@@ -50,4 +53,3 @@ class PostLikeService:
     async def check_like(self, post_id: UUID, user: User) -> bool:
         like = await self.repo.get_by_user_and_post(user_id=user.id, post_id=post_id)
         return like is not None
-

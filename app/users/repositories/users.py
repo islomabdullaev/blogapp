@@ -1,11 +1,12 @@
 from datetime import datetime
+from typing import List, Optional
+
+from sqlalchemy.orm import selectinload
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
-from typing import Optional, List
-from sqlalchemy.orm import selectinload
 
-from core.repositories.base import BaseRepository
 from app.users.models.users import User
+from core.repositories.base import BaseRepository
 
 
 class UserRepository(BaseRepository[User]):
@@ -33,8 +34,6 @@ class UserRepository(BaseRepository[User]):
         import uuid
 
         uuid_list = [uuid.UUID(uid) for uid in user_ids]
-        statement = select(User).where(
-            User.id.in_(uuid_list), User.is_deleted == False
-        )
+        statement = select(User).where(User.id.in_(uuid_list), User.is_deleted == False)
         result = await self.db.exec(statement)
         return result.all()

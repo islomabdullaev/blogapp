@@ -1,8 +1,10 @@
 """
 Celery application configuration
 """
+
 from celery import Celery
 from celery.schedules import crontab
+
 from core.settings import Settings
 
 settings = Settings()
@@ -38,4 +40,3 @@ celery_app.conf.beat_schedule = {
         "schedule": crontab(hour=23, minute=59),  # Run every day at 23:59 UTC
     },
 }
-

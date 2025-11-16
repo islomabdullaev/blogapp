@@ -1,8 +1,9 @@
-from typing import Type, TypeVar, Generic, Optional
 from datetime import datetime
+from typing import Generic, Optional, Type, TypeVar
+
+from pydantic import BaseModel as PydanticBaseModel
 from sqlmodel import SQLModel, select
 from sqlmodel.ext.asyncio.session import AsyncSession
-from pydantic import BaseModel as PydanticBaseModel
 
 T = TypeVar("T", bound=SQLModel)
 
@@ -25,7 +26,9 @@ class BaseRepository(Generic[T]):
         return obj
 
     async def get(self, obj_id) -> Optional[T]:
-        statement = select(self.model).where(self.model.id == obj_id, self.model.is_deleted == False)
+        statement = select(self.model).where(
+            self.model.id == obj_id, self.model.is_deleted == False
+        )
         result = await self.db.exec(statement)
         return result.first()
 
@@ -48,6 +51,6 @@ class BaseRepository(Generic[T]):
         return obj
 
     async def delete(self, obj: T):
-        obj.is_deleted = True # for soft delete purpose
+        obj.is_deleted = True  # for soft delete purpose
         await self.db.commit()
         await self.db.refresh(obj)
