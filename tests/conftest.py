@@ -9,10 +9,10 @@ from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 # Import all models to register them with SQLModel metadata
-from app.auth.models.verification import EmailVerification
-from app.blogs.models.posts import Comment, Post, PostLike
+from app.auth.models.verification import EmailVerification  # noqa: F401
+from app.blogs.models.posts import Comment, Post, PostLike  # noqa: F401
 from app.main import app
-from app.users.models.users import User
+from app.users.models.users import User  # noqa: F401
 from core.settings import Settings
 
 settings = Settings()
