@@ -5,7 +5,6 @@ Pytest configuration and fixtures
 import pytest
 from httpx import AsyncClient
 from sqlmodel import SQLModel
-from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.main import app
 from core.db.session import AsyncSessionLocal, engine

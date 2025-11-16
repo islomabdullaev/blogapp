@@ -50,9 +50,9 @@ async def _cleanup_expired_unverified_users_async():
 
                 # Get unverified verifications older than 1 month
                 statement = select(EmailVerification).where(
-                    EmailVerification.is_verified == False,
+                    EmailVerification.is_verified.is_(False),
                     EmailVerification.created_at < one_month_ago,
-                    EmailVerification.is_deleted == False,
+                    EmailVerification.is_deleted.is_(False),
                 )
                 result = await db.exec(statement)
                 expired_verifications = result.all()
@@ -115,7 +115,7 @@ async def _cleanup_expired_posts_async():
                 # Get posts older than 1 month
                 statement = select(Post).where(
                     Post.created_at < one_month_ago,
-                    Post.is_deleted == False,
+                    Post.is_deleted.is_(False),
                 )
 
                 result = await db.exec(statement)

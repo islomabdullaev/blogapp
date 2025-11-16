@@ -27,13 +27,13 @@ class BaseRepository(Generic[T]):
 
     async def get(self, obj_id) -> Optional[T]:
         statement = select(self.model).where(
-            self.model.id == obj_id, self.model.is_deleted == False
+            self.model.id == obj_id, self.model.is_deleted.is_(False)
         )
         result = await self.db.exec(statement)
         return result.first()
 
     async def list(self) -> list[T]:
-        statement = select(self.model).where(self.model.is_deleted == False)
+        statement = select(self.model).where(self.model.is_deleted.is_(False))
         result = await self.db.exec(statement)
         return result.all()
 

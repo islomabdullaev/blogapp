@@ -165,7 +165,7 @@ class PostService:
 
         # 1️⃣ Total users count
         total_result = await self.repo.db.exec(
-            select(func.count(User.id)).where(User.is_deleted == False)
+            select(func.count(User.id)).where(User.is_deleted.is_(False))
         )
         total = total_result.one()  # get integer directly
 
@@ -173,7 +173,7 @@ class PostService:
         # First, get distinct post_id and user_id pairs (excluding deleted likes)
         distinct_likes = (
             select(PostLike.post_id, PostLike.user_id)
-            .where(PostLike.is_deleted == False)
+            .where(PostLike.is_deleted.is_(False))
             .distinct()
             .subquery()
         )
@@ -214,11 +214,11 @@ class PostService:
                 Post,
                 and_(
                     User.id == Post.user_id,
-                    Post.is_deleted == False,
+                    Post.is_deleted.is_(False),
                 ),
             )
             .outerjoin(likes_subq, likes_subq.c.post_id == Post.id)
-            .where(User.is_deleted == False)
+            .where(User.is_deleted.is_(False))
             .group_by(User.id)
             .order_by(User.id)
             .offset(skip)

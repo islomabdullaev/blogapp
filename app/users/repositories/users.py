@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import List, Optional
 
 from sqlalchemy.orm import selectinload
@@ -15,7 +14,7 @@ class UserRepository(BaseRepository[User]):
 
     async def get_by_username(self, username: str) -> Optional[User]:
         statement = select(User).where(
-            User.username == username, User.is_deleted == False
+            User.username == username, User.is_deleted.is_(False)
         )
         result = await self.db.exec(statement)
         return result.first()
@@ -24,7 +23,7 @@ class UserRepository(BaseRepository[User]):
         statement = (
             select(User)
             .options(selectinload(User.verification))
-            .where(User.email == email, User.is_deleted == False)
+            .where(User.email == email, User.is_deleted.is_(False))
         )
         result = await self.db.exec(statement)
         return result.first()
@@ -34,6 +33,8 @@ class UserRepository(BaseRepository[User]):
         import uuid
 
         uuid_list = [uuid.UUID(uid) for uid in user_ids]
-        statement = select(User).where(User.id.in_(uuid_list), User.is_deleted == False)
+        statement = select(User).where(
+            User.id.in_(uuid_list), User.is_deleted.is_(False)
+        )
         result = await self.db.exec(statement)
         return result.all()

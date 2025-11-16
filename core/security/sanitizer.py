@@ -1,6 +1,6 @@
 """XSS protection through input sanitization"""
 
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 import bleach
 from pydantic import BaseModel
