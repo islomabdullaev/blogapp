@@ -3,9 +3,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 
-from pydantic import Field, validator
-
-# SQLModel
+from pydantic import field_validator
 from sqlmodel import Field, Relationship
 
 # models
@@ -34,7 +32,8 @@ class Post(BaseModel, table=True):
             return False
         return datetime.utcnow() > self.expires_at
 
-    @validator("title")
+    @field_validator("title")
+    @classmethod
     def validate_title(cls, v):
         # Only letters (latin/cyrillic) and spaces
         pattern = r"^[a-zа-яёA-ZА-ЯЁ0-9\s]+$"
@@ -46,7 +45,8 @@ class Post(BaseModel, table=True):
             raise ValueError("Title должен быть больше 5 и меньше 1000 символов")
         return v
 
-    @validator("content")
+    @field_validator("content")
+    @classmethod
     def validate_content(cls, v):
         if len(v) > 10_000:
             raise ValueError("Content должен быть меньше 10_000 символов")

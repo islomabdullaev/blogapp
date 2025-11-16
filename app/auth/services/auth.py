@@ -1,5 +1,3 @@
-from datetime import datetime, timedelta
-
 from fastapi import HTTPException, Request, status
 from passlib.context import CryptContext
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -7,7 +5,6 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from app.auth.dependencies.jwt import JwtBearer
 from app.auth.schemas.auth import UserCreate
 from app.auth.services.verification import VerificationService
-from app.users.models.users import User
 from app.users.repositories.users import UserRepository
 from core.db.redis_client import get_redis_client
 from core.security.brute_force import BruteForceProtection

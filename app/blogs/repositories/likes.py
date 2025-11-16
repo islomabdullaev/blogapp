@@ -19,7 +19,7 @@ class PostLikeRepository(BaseRepository[PostLike]):
         statement = select(PostLike).where(
             PostLike.user_id == user_id,
             PostLike.post_id == post_id,
-            PostLike.is_deleted == False,
+            PostLike.is_deleted.is_(False),
         )
         result = await self.db.exec(statement)
         return result.first()

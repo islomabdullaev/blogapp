@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import HTTPException, status
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.blogs.models.posts import Comment, Post
+from app.blogs.models.posts import Comment
 from app.blogs.repositories.comments import CommentRepository
 from app.blogs.repositories.posts import PostRepository
 from app.blogs.schemas.comments import CommentCreateSchema

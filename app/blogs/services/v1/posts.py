@@ -1,11 +1,10 @@
 import json
-from datetime import datetime, timedelta
-from typing import Dict, List
+from datetime import datetime
+from typing import List
 from uuid import UUID
 
 from fastapi import HTTPException, status
 from sqlalchemy import JSON
-from sqlalchemy.orm import selectinload
 from sqlmodel import and_, func, or_, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -73,7 +72,7 @@ class PostService:
     ):
         """List posts with pagination, search and date filtering"""
         statement = select(Post).where(
-            Post.is_deleted == False,
+            Post.is_deleted.is_(False),
             or_(
                 Post.expires_at.is_(None),
                 Post.expires_at > datetime.utcnow(),
@@ -107,7 +106,7 @@ class PostService:
 
         # Get total count
         count_statement = select(func.count(Post.id)).where(
-            Post.is_deleted == False,
+            Post.is_deleted.is_(False),
             or_(
                 Post.expires_at.is_(None),
                 Post.expires_at > datetime.utcnow(),

@@ -5,7 +5,6 @@ from uuid import UUID
 from fastapi import HTTPException, status
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.auth.models.verification import EmailVerification
 from app.auth.repositories.verification import VerificationRepository
 from app.auth.schemas.auth import EmailVerificationSchema
 

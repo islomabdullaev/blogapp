@@ -15,7 +15,7 @@ class VerificationRepository(BaseRepository[EmailVerification]):
     async def get_by_token(self, token: str) -> Optional[EmailVerification]:
         statement = select(EmailVerification).where(
             EmailVerification.token == token,
-            EmailVerification.is_deleted == False,
+            EmailVerification.is_deleted.is_(False),
         )
         result = await self.db.exec(statement)
         return result.first()
@@ -23,7 +23,7 @@ class VerificationRepository(BaseRepository[EmailVerification]):
     async def get_by_user_id(self, user_id: str) -> Optional[EmailVerification]:
         statement = select(EmailVerification).where(
             EmailVerification.user_id == user_id,
-            EmailVerification.is_deleted == False,
+            EmailVerification.is_deleted.is_(False),
         )
         result = await self.db.exec(statement)
         return result.first()
@@ -32,9 +32,9 @@ class VerificationRepository(BaseRepository[EmailVerification]):
         """Get expired unverified email verifications"""
         now = datetime.utcnow()
         statement = select(EmailVerification).where(
-            EmailVerification.is_verified == False,
+            EmailVerification.is_verified.is_(False),
             EmailVerification.expires_at < now,
-            EmailVerification.is_deleted == False,
+            EmailVerification.is_deleted.is_(False),
         )
         result = await self.db.exec(statement)
         return result.all()

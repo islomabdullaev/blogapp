@@ -13,7 +13,7 @@ class CommentRepository(BaseRepository[Comment]):
 
     async def get_by_post_id(self, post_id) -> List[Comment]:
         statement = select(Comment).where(
-            Comment.post_id == post_id, Comment.is_deleted == False
+            Comment.post_id == post_id, Comment.is_deleted.is_(False)
         )
         result = await self.db.exec(statement)
         return result.all()
@@ -21,7 +21,7 @@ class CommentRepository(BaseRepository[Comment]):
     async def delete_all_by_post_id(self, post_id):
         """Delete all comments of a post (soft delete)"""
         statement = select(Comment).where(
-            Comment.post_id == post_id, Comment.is_deleted == False
+            Comment.post_id == post_id, Comment.is_deleted.is_(False)
         )
         result = await self.db.exec(statement)
         comments = result.all()

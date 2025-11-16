@@ -12,7 +12,6 @@ from app.blogs.schemas.posts import (
     PostResponseSchema,
     PostUpdateSchema,
     UserWithArticlesListResponseSchema,
-    UserWithArticlesSchema,
 )
 from app.blogs.services.v1.comments import CommentService
 from app.blogs.services.v1.likes import PostLikeService
