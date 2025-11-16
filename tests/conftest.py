@@ -4,15 +4,42 @@ Pytest configuration and fixtures
 
 import pytest
 from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlmodel import SQLModel
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.main import app
-from core.db.session import AsyncSessionLocal, engine
+from core.settings import Settings
+
+# Import all models to register them with SQLModel metadata
+from app.auth.models.verification import EmailVerification  # noqa: F401
+from app.blogs.models.posts import Comment, Post, PostLike  # noqa: F401
+from app.users.models.users import User  # noqa: F401
+
+settings = Settings()
+DATABASE_URL = settings.postgres.adsn
 
 
-@pytest.fixture
-async def db_session():
+@pytest.fixture(scope="function")
+async def test_engine():
+    """Create a fresh engine for each test"""
+    engine = create_async_engine(
+        DATABASE_URL,
+        echo=False,
+        pool_pre_ping=True,
+        pool_size=1,
+        max_overflow=0,
+    )
+    yield engine
+    await engine.dispose()
+
+
+@pytest.fixture(scope="function")
+async def db_session(test_engine):
     """Create a test database session"""
+    AsyncSessionLocal = async_sessionmaker(
+        test_engine, class_=AsyncSession, expire_on_commit=False
+    )
     async with AsyncSessionLocal() as session:
         yield session
         await session.rollback()
@@ -37,11 +64,11 @@ async def client(db_session):
     app.dependency_overrides.clear()
 
 
-@pytest.fixture(autouse=True)
-async def setup_db():
+@pytest.fixture(autouse=True, scope="function")
+async def setup_db(test_engine):
     """Setup test database before each test"""
-    async with engine.begin() as conn:
+    async with test_engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
     yield
-    async with engine.begin() as conn:
+    async with test_engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.drop_all)
