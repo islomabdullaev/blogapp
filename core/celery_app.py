@@ -2,6 +2,7 @@
 Celery application configuration
 """
 from celery import Celery
+from celery.schedules import crontab
 from core.settings import Settings
 
 settings = Settings()
@@ -30,11 +31,11 @@ celery_app.conf.update(
 celery_app.conf.beat_schedule = {
     "cleanup-expired-unverified-users": {
         "task": "core.tasks.cleanup.cleanup_expired_unverified_users",
-        "schedule": 86400.0,  # Run daily (24 hours in seconds)
+        "schedule": crontab(hour=23, minute=59),  # Run every day at 23:59 UTC
     },
     "cleanup-expired-posts": {
         "task": "core.tasks.cleanup.cleanup_expired_posts",
-        "schedule": 86400.0,  # Run daily (24 hours in seconds)
+        "schedule": crontab(hour=23, minute=59),  # Run every day at 23:59 UTC
     },
 }
 

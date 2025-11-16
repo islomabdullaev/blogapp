@@ -3,15 +3,14 @@ Celery tasks for cleanup operations
 """
 import asyncio
 import logging
-from datetime import datetime
-
-from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy.orm import sessionmaker
+from datetime import datetime, timedelta
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from core.celery_app import celery_app
 from core.settings import Settings
 from app.auth.repositories.verification import VerificationRepository
+from app.auth.models.verification import EmailVerification
 from app.users.repositories.users import UserRepository
 from app.blogs.repositories.posts import PostRepository
 from app.blogs.models.posts import Post
@@ -22,104 +21,139 @@ logger = logging.getLogger(__name__)
 settings = Settings()
 DATABASE_URL = settings.postgres.adsn
 
-engine = create_async_engine(DATABASE_URL, echo=False)
-AsyncSessionLocal = sessionmaker(
-    engine, class_=AsyncSession, expire_on_commit=False
-)
-
 
 async def _cleanup_expired_unverified_users_async():
-    """Async function to clean up expired unverified users"""
-    async with AsyncSessionLocal() as db:
-        try:
-            verification_repo = VerificationRepository(db)
-            user_repo = UserRepository(db)
+    """Async function to clean up unverified users older than 1 month"""
+    # Create engine and session maker fresh for each task execution
+    # This ensures they're tied to the current event loop created by asyncio.run()
+    engine = create_async_engine(
+        DATABASE_URL,
+        echo=False,
+        pool_pre_ping=True,
+        pool_size=2,  # Smaller pool for individual tasks
+        max_overflow=5,
+    )
+    AsyncSessionLocal = async_sessionmaker(
+        engine, class_=AsyncSession, expire_on_commit=False
+    )
+    
+    try:
+        async with AsyncSessionLocal() as db:
+            try:
+                verification_repo = VerificationRepository(db)
+                user_repo = UserRepository(db)
 
-            # Get expired unverified verifications
-            expired_verifications = await verification_repo.get_expired_unverified()
+                # Calculate date 1 month ago
+                one_month_ago = datetime.utcnow() - timedelta(days=30)
 
-            deleted_count = 0
-            user_ids_to_delete = []
+                # Get unverified verifications older than 1 month
+                statement = select(EmailVerification).where(
+                    EmailVerification.is_verified == False,
+                    EmailVerification.created_at < one_month_ago,
+                    EmailVerification.is_deleted == False,
+                )
+                result = await db.exec(statement)
+                expired_verifications = result.all()
 
-            for verification in expired_verifications:
-                user_ids_to_delete.append(str(verification.user_id))
-                # Delete verification record
-                await verification_repo.delete(verification)
+                deleted_count = 0
+                user_ids_to_delete = []
 
-            # Delete users
-            if user_ids_to_delete:
-                users = await user_repo.get_users_by_user_ids(user_ids_to_delete)
-                for user in users:
-                    await user_repo.delete(user)
-                    deleted_count += 1
+                for verification in expired_verifications:
+                    user_ids_to_delete.append(str(verification.user_id))
+                    # Delete verification record
+                    await verification_repo.delete(verification)
 
-            await db.commit()
-            logger.info(
-                f"Cleaned up {deleted_count} expired unverified users at {datetime.utcnow()}"
-            )
-            return {
-                "deleted_count": deleted_count,
-                "timestamp": datetime.utcnow().isoformat(),
-            }
-        except Exception as e:
-            logger.error(f"Error cleaning up expired unverified users: {e}")
-            await db.rollback()
-            raise
+                # Delete users
+                if user_ids_to_delete:
+                    users = await user_repo.get_users_by_user_ids(user_ids_to_delete)
+                    for user in users:
+                        await user_repo.delete(user)
+                        deleted_count += 1
+
+                await db.commit()
+                logger.info(
+                    f"Cleaned up {deleted_count} expired unverified users at {datetime.utcnow()}"
+                )
+                return {
+                    "deleted_count": deleted_count,
+                    "timestamp": datetime.utcnow().isoformat(),
+                }
+            except Exception as e:
+                logger.error(f"Error cleaning up expired unverified users: {e}")
+                await db.rollback()
+                raise
+    finally:
+        # Dispose of the engine to close all connections
+        await engine.dispose()
 
 
 async def _cleanup_expired_posts_async():
-    """Async function to clean up expired posts"""
-    async with AsyncSessionLocal() as db:
-        try:
-            post_repo = PostRepository(db)
-            now = datetime.utcnow()
+    """Async function to clean up posts older than 1 month"""
+    # Create engine and session maker fresh for each task execution
+    # This ensures they're tied to the current event loop created by asyncio.run()
+    engine = create_async_engine(
+        DATABASE_URL,
+        echo=False,
+        pool_pre_ping=True,
+        pool_size=2,  # Smaller pool for individual tasks
+        max_overflow=5,
+    )
+    AsyncSessionLocal = async_sessionmaker(
+        engine, class_=AsyncSession, expire_on_commit=False
+    )
+    
+    try:
+        async with AsyncSessionLocal() as db:
+            try:
+                post_repo = PostRepository(db)
 
-            # Get expired posts
-            statement = select(Post).where(
-                Post.expires_at.isnot(None),
-                Post.expires_at < now,
-                Post.is_deleted == False,
-            )
+                # Calculate date 1 month ago
+                one_month_ago = datetime.utcnow() - timedelta(days=30)
 
-            result = await db.exec(statement)
-            expired_posts = result.all()
+                # Get posts older than 1 month
+                statement = select(Post).where(
+                    Post.created_at < one_month_ago,
+                    Post.is_deleted == False,
+                )
 
-            deleted_count = 0
-            for post in expired_posts:
-                await post_repo.delete(post)
-                deleted_count += 1
+                result = await db.exec(statement)
+                expired_posts = result.all()
 
-            await db.commit()
-            logger.info(
-                f"Cleaned up {deleted_count} expired posts at {datetime.utcnow()}"
-            )
-            return {
-                "deleted_count": deleted_count,
-                "timestamp": datetime.utcnow().isoformat(),
-            }
-        except Exception as e:
-            logger.error(f"Error cleaning up expired posts: {e}")
-            await db.rollback()
-            raise
+                deleted_count = 0
+                for post in expired_posts:
+                    await post_repo.delete(post)
+                    deleted_count += 1
+
+                await db.commit()
+                logger.info(
+                    f"Cleaned up {deleted_count} expired posts at {datetime.utcnow()}"
+                )
+                return {
+                    "deleted_count": deleted_count,
+                    "timestamp": datetime.utcnow().isoformat(),
+                }
+            except Exception as e:
+                logger.error(f"Error cleaning up expired posts: {e}")
+                await db.rollback()
+                raise
+    finally:
+        # Dispose of the engine to close all connections
+        await engine.dispose()
 
 
 @celery_app.task(name="core.tasks.cleanup.cleanup_expired_unverified_users")
 def cleanup_expired_unverified_users():
-    """Clean up users whose email verification has expired (runs daily)"""
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        return loop.run_until_complete(_cleanup_expired_unverified_users_async())
-    finally:
-        loop.close()
+    """Clean up unverified users older than 1 month (runs daily)"""
+    # Use asyncio.run() which properly creates and manages the event loop
+    # This ensures proper isolation between task executions and prevents
+    # connection conflicts that occur when manually managing event loops
+    return asyncio.run(_cleanup_expired_unverified_users_async())
 
 
 @celery_app.task(name="core.tasks.cleanup.cleanup_expired_posts")
 def cleanup_expired_posts():
-    """Clean up expired posts (runs daily)"""
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        return loop.run_until_complete(_cleanup_expired_posts_async())
-    finally:
-        loop.close()
+    """Clean up posts older than 1 month (runs daily)"""
+    # Use asyncio.run() which properly creates and manages the event loop
+    # This ensures proper isolation between task executions and prevents
+    # connection conflicts that occur when manually managing event loops
+    return asyncio.run(_cleanup_expired_posts_async())
