@@ -1,0 +1,106 @@
+# -----------------------------
+# Python
+# -----------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pdb
+*.egg-info/
+*.egg
+*.log
+
+# Byte-compiled / optimized / DLL files
+*.so
+
+# Virtual Environment
+venv/
+env/
+.venv/
+.env/
+*.env
+*.env.*
+
+# -----------------------------
+# FastAPI / Uvicorn
+# -----------------------------
+# Uvicorn reload artifacts
+.reload*
+
+# -----------------------------
+# IDE & Editor Settings
+# -----------------------------
+# PyCharm
+.idea/
+
+# VSCode
+.vscode/
+*.code-workspace
+
+# MacOS
+.DS_Store
+
+# -----------------------------
+# Docker
+# -----------------------------
+# Local dev containers & volumes
+docker-data/
+docker-volumes/
+*.pid
+*.pid.lock
+
+# Docker build cache
+**/build/
+**/dist/
+
+# -----------------------------
+# Tests & Coverage
+# -----------------------------
+htmlcov/
+.coverage
+.coverage.*
+.cache/
+.pytest_cache/
+.tox/
+.mypy_cache/
+pytestdebug.log
+
+# -----------------------------
+# Static & Media Files
+# -----------------------------
+static/
+media/
+uploads/
+
+# -----------------------------
+# Database files (SQLite)
+# -----------------------------
+*.db
+*.sqlite
+*.sqlite3
+
+# -----------------------------
+# Compiled migrations (if Alembic)
+# -----------------------------
+alembic/versions/*.pyc
+alembic/versions/*__pycache__/
+
+# -----------------------------
+# Node / Frontend (if applicable)
+# -----------------------------
+node_modules/
+dist/
+build/
+*.lock
+
+# -----------------------------
+# Local configs
+# -----------------------------
+*.local
+*.yaml.local
+*.yml.local
+
+# Hide any secrets files
+secret.key
+keys/
+certs/
