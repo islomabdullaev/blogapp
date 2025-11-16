@@ -19,8 +19,8 @@ class PostgresSettings(BaseSettings):
 
 
 class RedisSettings(BaseSettings):
-    host: str = ...
-    port: int = ...
+    host: str = "localhost"
+    port: int = 6379
     model_config = SettingsConfigDict(env_prefix="redis_")
 
     @property
