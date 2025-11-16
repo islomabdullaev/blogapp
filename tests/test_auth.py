@@ -80,7 +80,7 @@ async def test_login_success(client: AsyncClient):
     assert register_response.status_code == 201
 
     # Login
-    login_data = {"username": "testuser", "password": "testpass123"}
+    login_data = {"email": "test@example.com", "password": "testpass123"}
     response = await client.post("/api/auth/login", json=login_data)
     assert response.status_code == 200
     data = response.json()
@@ -92,7 +92,7 @@ async def test_login_success(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_login_invalid_credentials(client: AsyncClient):
     """Test login with invalid credentials"""
-    login_data = {"username": "nonexistent", "password": "wrongpass"}
+    login_data = {"email": "nonexistent@example.com", "password": "wrongpass"}
     response = await client.post("/api/auth/login", json=login_data)
     assert response.status_code == 401
     assert "Invalid credentials" in response.json()["detail"]
@@ -141,7 +141,7 @@ async def test_get_current_user_authenticated(client: AsyncClient):
     # Register and login
     await client.post("/api/auth/register", json=user_data)
     login_response = await client.post(
-        "/api/auth/login", json={"username": "testuser", "password": "testpass123"}
+        "/api/auth/login", json={"email": "test@example.com", "password": "testpass123"}
     )
     token = login_response.json()["access_token"]
 
